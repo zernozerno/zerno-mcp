@@ -1,0 +1,50 @@
+{
+  "serverInfo": {
+    "name": "ZERNO Lite",
+    "version": "1.0.0"
+  },
+  "authentication": {
+    "required": true,
+    "schemes": [
+      "oauth2"
+    ],
+    "transport": "streamable-http",
+    "endpoint": "https://zerno.one/mcp"
+  },
+  "tools": [
+    {
+      "name": "zerno_get_project_brief",
+      "description": "Short project brief: name, slug, stage, one-liner, current focus, next best action, up to 5 do-not-do items, and compiled memory index. Call once at session start when you need orientation; do NOT call before every task — list_tasks/get_task carry their own context."
+    },
+    {
+      "name": "zerno_get_agent_context",
+      "description": "Fetch compiled project memory for an agent run: memory index, recent articles, recent session events, and a markdown context block. Pass related_task_id for task-specific memory."
+    },
+    {
+      "name": "zerno_list_tasks",
+      "description": "List backlog tasks for this project. Filter by status[] (e.g. ['backlog','ready','in_progress','at_agent']), priority, theme, score presence, staleness. Returns full task objects (capped by `limit`, default 50). Prefer narrow filters and a small `limit` to keep responses compact; get_task is only needed to fetch a task by its UUID."
+    },
+    {
+      "name": "zerno_get_task",
+      "description": "Full detail for one task: title, status, acceptance criteria, file paths, attachments, plan/report if any."
+    },
+    {
+      "name": "zerno_update_task",
+      "description": "Writes: mutates the task in place (status transitions are validated; ICE is recomputed when any score changes) and records an audit event. Patch task fields: title, status, priority, importance_score, impact_score, effort_score (each 0-10), product_moving (★ flag), theme tag, agent_notes. The executor is controlled by the task assignee, not scoring. Use this for workflow status changes and human-confirmed edits; agent-proposed classifications should go through submit_task_triage."
+    },
+    {
+      "name": "zerno_submit_task_triage",
+      "description": "Submit AI triage proposals for one or more backlog tasks. Each item is stored as a `pending` suggestion (size/readiness/risk/type/next_action/reason); the underlying task is NOT mutated. A human accepts or rejects from the web UI. Use after analyzing the inbox to write back classifications in one call."
+    },
+    {
+      "name": "zerno_create_agent_intake_task",
+      "description": "Writes: creates a NEW task in `review` status. File a review task from an ad-hoc implementation report — used when the agent performed work outside an existing task and wants to register it in the backlog for human review. Not for normal backlog decomposition."
+    },
+    {
+      "name": "zerno_capture_session_event",
+      "description": "Writes: appends a new event into compiled project memory. Adds a concise session summary/event. Useful from agent hooks or at the end of a coding session when no run_id lifecycle is active."
+    }
+  ],
+  "resources": [],
+  "prompts": []
+}

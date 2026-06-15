@@ -1,0 +1,469 @@
+{
+  "tools": [
+    {
+      "name": "zerno_get_project_brief",
+      "description": "Short project brief: name, slug, stage, one-liner, current focus, next best action, up to 5 do-not-do items, and compiled memory index. Call once at session start when you need orientation; do NOT call before every task — list_tasks/get_task carry their own context.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_slug": {
+            "type": "string",
+            "description": "ZERNO project slug (e.g. 'zerno-one'). Required for user-scoped OAuth tokens; legacy project-scoped tokens may omit it."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ZERNO project UUID. Either project_slug or project_id is required for user-scoped tokens."
+          }
+        },
+        "required": []
+      },
+      "_meta": {
+        "io.zerno/required_scope": "tasks:read"
+      }
+    },
+    {
+      "name": "zerno_get_agent_context",
+      "description": "Fetch compiled project memory for an agent run: memory index, recent articles, recent session events, and a markdown context block. Pass related_task_id for task-specific memory.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "related_task_id": {
+            "type": "string",
+            "description": "Optional task UUID for task-specific memory"
+          },
+          "project_slug": {
+            "type": "string",
+            "description": "ZERNO project slug (e.g. 'zerno-one'). Required for user-scoped OAuth tokens; legacy project-scoped tokens may omit it."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ZERNO project UUID. Either project_slug or project_id is required for user-scoped tokens."
+          }
+        },
+        "required": []
+      },
+      "_meta": {
+        "io.zerno/required_scope": "tasks:read"
+      }
+    },
+    {
+      "name": "zerno_list_tasks",
+      "description": "List backlog tasks for this project. Filter by status[] (e.g. ['backlog','ready','in_progress','at_agent']), priority, theme, score presence, staleness. Returns full task objects (capped by `limit`, default 50). Prefer narrow filters and a small `limit` to keep responses compact; get_task is only needed to fetch a task by its UUID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "statuses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "e.g. ['backlog','ready','in_progress','at_agent']"
+          },
+          "priorities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high",
+                "urgent"
+              ]
+            }
+          },
+          "themes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "assignee_type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "human"
+            ]
+          },
+          "assignee": {
+            "type": "string"
+          },
+          "min_ice": {
+            "type": "number"
+          },
+          "product_moving": {
+            "type": "boolean"
+          },
+          "has_score": {
+            "type": "boolean"
+          },
+          "stale_days": {
+            "type": "number"
+          },
+          "bet_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "no_bet": {
+            "type": "boolean"
+          },
+          "include_merged": {
+            "type": "boolean",
+            "default": false
+          },
+          "include_deleted": {
+            "type": "boolean",
+            "default": false
+          },
+          "limit": {
+            "type": "number",
+            "default": 50
+          },
+          "order_by": {
+            "type": "string",
+            "enum": [
+              "updated_desc",
+              "ice_desc",
+              "ice_asc",
+              "created_desc",
+              "priority_then_ice"
+            ],
+            "default": "updated_desc"
+          },
+          "project_slug": {
+            "type": "string",
+            "description": "ZERNO project slug (e.g. 'zerno-one'). Required for user-scoped OAuth tokens; legacy project-scoped tokens may omit it."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ZERNO project UUID. Either project_slug or project_id is required for user-scoped tokens."
+          }
+        },
+        "required": []
+      },
+      "_meta": {
+        "io.zerno/required_scope": "tasks:read"
+      }
+    },
+    {
+      "name": "zerno_get_task",
+      "description": "Full detail for one task: title, status, acceptance criteria, file paths, attachments, plan/report if any.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task UUID"
+          }
+        },
+        "required": [
+          "task_id"
+        ]
+      },
+      "_meta": {
+        "io.zerno/required_scope": "tasks:read"
+      }
+    },
+    {
+      "name": "zerno_update_task",
+      "description": "Writes: mutates the task in place (status transitions are validated; ICE is recomputed when any score changes) and records an audit event. Patch task fields: title, status, priority, importance_score, impact_score, effort_score (each 0-10), product_moving (★ flag), theme tag, agent_notes. The executor is controlled by the task assignee, not scoring. Use this for workflow status changes and human-confirmed edits; agent-proposed classifications should go through submit_task_triage.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "Task UUID"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "backlog",
+              "ready",
+              "ready_for_agent",
+              "in_progress",
+              "at_agent",
+              "waiting_limit",
+              "review",
+              "done",
+              "blocked",
+              "cancelled"
+            ]
+          },
+          "priority": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "urgent"
+            ]
+          },
+          "importance_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "impact_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "effort_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "product_moving": {
+            "type": "boolean"
+          },
+          "theme": {
+            "type": "string",
+            "description": "Short cluster tag (e.g. mcp, ui, infra)"
+          },
+          "agent_notes": {
+            "type": "string",
+            "description": "Persistent notes for future agent runs"
+          },
+          "bet_id": {
+            "type": "string",
+            "description": "Strategic bet UUID; null to detach"
+          }
+        },
+        "required": [
+          "task_id"
+        ]
+      },
+      "_meta": {
+        "io.zerno/required_scope": "tasks:write_status"
+      }
+    },
+    {
+      "name": "zerno_submit_task_triage",
+      "description": "Submit AI triage proposals for one or more backlog tasks. Each item is stored as a `pending` suggestion (size/readiness/risk/type/next_action/reason); the underlying task is NOT mutated. A human accepts or rejects from the web UI. Use after analyzing the inbox to write back classifications in one call.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "task_id": {
+                  "type": "string",
+                  "description": "Task UUID"
+                },
+                "triage_type": {
+                  "type": "string",
+                  "enum": [
+                    "bug",
+                    "product_task",
+                    "ui_task",
+                    "research",
+                    "integration",
+                    "tech_debt",
+                    "refactoring",
+                    "ops",
+                    "unknown"
+                  ]
+                },
+                "triage_size": {
+                  "type": "string",
+                  "enum": [
+                    "XS",
+                    "S",
+                    "M",
+                    "L",
+                    "XL"
+                  ]
+                },
+                "triage_readiness": {
+                  "type": "string",
+                  "enum": [
+                    "ready",
+                    "needs_clarification",
+                    "needs_design_decision",
+                    "needs_technical_investigation",
+                    "duplicate_or_merge",
+                    "too_large",
+                    "blocked",
+                    "trash"
+                  ]
+                },
+                "triage_risk": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ]
+                },
+                "next_action": {
+                  "type": "string",
+                  "description": "One sentence on what to do next"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "Why this classification"
+                },
+                "confidence": {
+                  "type": "string",
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ]
+                }
+              },
+              "required": [
+                "task_id"
+              ]
+            }
+          },
+          "source_agent": {
+            "type": "string",
+            "description": "Identifier of the agent (e.g. codex, claude_code)"
+          },
+          "agent_session_id": {
+            "type": "string"
+          },
+          "project_slug": {
+            "type": "string",
+            "description": "ZERNO project slug (e.g. 'zerno-one'). Required for user-scoped OAuth tokens; legacy project-scoped tokens may omit it."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ZERNO project UUID. Either project_slug or project_id is required for user-scoped tokens."
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "_meta": {
+        "io.zerno/required_scope": "tasks:write_status"
+      }
+    },
+    {
+      "name": "zerno_create_agent_intake_task",
+      "description": "Writes: creates a NEW task in `review` status. File a review task from an ad-hoc implementation report — used when the agent performed work outside an existing task and wants to register it in the backlog for human review. Not for normal backlog decomposition.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Short task title"
+          },
+          "summary": {
+            "type": "string",
+            "description": "Implementation summary"
+          },
+          "changed_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "screenshot_urls": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "description": "Screenshot URL or file reference"
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "safety_class": {
+            "type": "string",
+            "description": "Execution safety class, default bulk_safe"
+          },
+          "agent_session_id": {
+            "type": "string"
+          },
+          "agent_kind": {
+            "type": "string",
+            "description": "codex | claude | opencode | other"
+          },
+          "project_slug": {
+            "type": "string",
+            "description": "ZERNO project slug (e.g. 'zerno-one'). Required for user-scoped OAuth tokens; legacy project-scoped tokens may omit it."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ZERNO project UUID. Either project_slug or project_id is required for user-scoped tokens."
+          }
+        },
+        "required": [
+          "title",
+          "summary"
+        ]
+      },
+      "_meta": {
+        "io.zerno/required_scope": "reports:write"
+      }
+    },
+    {
+      "name": "zerno_capture_session_event",
+      "description": "Writes: appends a new event into compiled project memory. Adds a concise session summary/event. Useful from agent hooks or at the end of a coding session when no run_id lifecycle is active.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "event_type": {
+            "type": "string",
+            "description": "session_end | pre_compact | manual_flush | task_done"
+          },
+          "agent_kind": {
+            "type": "string",
+            "description": "codex | claude_code | opencode | other"
+          },
+          "summary_md": {
+            "type": "string",
+            "description": "Concise markdown summary"
+          },
+          "agent_session_id": {
+            "type": "string"
+          },
+          "related_task_id": {
+            "type": "string",
+            "description": "Optional task UUID"
+          },
+          "changed_files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metadata": {
+            "type": "object"
+          },
+          "transcript_ref": {
+            "type": "string",
+            "description": "Optional external transcript reference"
+          },
+          "project_slug": {
+            "type": "string",
+            "description": "ZERNO project slug (e.g. 'zerno-one'). Required for user-scoped OAuth tokens; legacy project-scoped tokens may omit it."
+          },
+          "project_id": {
+            "type": "string",
+            "description": "ZERNO project UUID. Either project_slug or project_id is required for user-scoped tokens."
+          }
+        },
+        "required": [
+          "agent_kind",
+          "summary_md"
+        ]
+      },
+      "_meta": {
+        "io.zerno/required_scope": "memory:write"
+      }
+    }
+  ]
+}

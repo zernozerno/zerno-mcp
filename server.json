@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "one.zerno/zerno-lite",
+  "description": "Secure remote MCP server for giving AI agents access to ZERNO project briefs, task context, and structured intake workflows.",
+  "version": "1.0.0",
+  "websiteUrl": "https://zerno.one",
+  "repository": {
+    "url": "https://github.com/zernozerno/zerno-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://zerno.one/mcp"
+    }
+  ]
+}
